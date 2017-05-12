@@ -195,6 +195,7 @@ class KPNFCApplet {
 
 		// Decryption has been initialised, so ask the card to decrypt the text.
 		byte[] transactionKeyEncrypted = new byte[encrypted.length];
+		int resultLength = 0;
 
 		for(int idx = 0; idx < encrypted.length; idx += max_chunk_size_aes) {
 			int amt = encrypted.length - idx;
@@ -204,9 +205,12 @@ class KPNFCApplet {
 			byte[] chunk = new byte[amt];
 			System.arraycopy(encrypted, idx, chunk, 0, amt);
 
-			byte[] response = channel.transceive(constructApdu(INS_CARD_DECRYPT_BLOCK, chunk));
+			byte[] response = channel.transceive(constructApdu(INS_CARD_DECRYPT_BLOCK, chunk, (idx + max_chunk_size_aes) < encrypted.length));
 			if(response.length > 1 && response[0] == (byte)0x1) {
-				System.arraycopy(response, 1, transactionKeyEncrypted, idx, amt);
+                // Response: Error flag + Result data + SW;
+				int resultBlockLength = response.length - 1 - 2;
+				System.arraycopy(response, 1, transactionKeyEncrypted, resultLength, resultBlockLength);
+				resultLength += resultBlockLength;
 			}
 		}
 
@@ -400,6 +404,15 @@ class KPNFCApplet {
 
 		System.arraycopy(data, 0, apdu, OFFSET_DATA, data.length);
 
+		return apdu;
+	}
+
+	public static byte[] constructApdu(byte command, byte[] data, boolean has_more)
+	{
+		byte[] apdu = constructApdu(command, data);
+		if (has_more) {
+			apdu[OFFSET_P1] |= 0x80;
+		}
 		return apdu;
 	}
 

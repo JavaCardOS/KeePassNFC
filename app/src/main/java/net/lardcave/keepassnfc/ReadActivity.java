@@ -74,14 +74,14 @@ public class ReadActivity extends Activity {
 	        }
 		}
 
+        DatabaseInfo dbinfo = DatabaseInfo.deserialise(this);
+
+        if(dbinfo == null) {
+            Toast.makeText(this, "No KPNFC database set up.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
 		if (payload != null && payload.length > 0) {
-			DatabaseInfo dbinfo = DatabaseInfo.deserialise(this);
-
-			if(dbinfo == null) {
-				Toast.makeText(this, "No KPNFC database set up.", Toast.LENGTH_SHORT).show();
-				return;
-			}
-
 			switch(payload[0]) {
 				case Settings.KEY_TYPE_RAW: {
 
@@ -110,13 +110,26 @@ public class ReadActivity extends Activity {
 					}
 				}
 			}
+		} else {
+            KPNFCApplet applet = new KPNFCApplet();
+            byte[] decrypted_bytes = null;
+            try {
+                decrypted_bytes = applet.decrypt(intent, dbinfo.encrypted_password);
+            } catch (IOException e) {
+                Toast.makeText(this, "Card communication failed.", Toast.LENGTH_SHORT).show();
+                dbinfo = null;
+            }
 
-			if(dbinfo != null) {
-				startKeepassActivity(dbinfo);
-			}
+            if(decrypted_bytes != null) {
+                dbinfo.set_decrypted_password(decrypted_bytes);
+            }
+        }
 
-			finish();
-		}
+        if(dbinfo != null) {
+            startKeepassActivity(dbinfo);
+        }
+
+        finish();
 	}
 
 	private boolean startKeepassActivity(DatabaseInfo dbinfo)
@@ -124,7 +137,7 @@ public class ReadActivity extends Activity {
 		Intent intent = new Intent();
 		
 		intent.setComponent(new ComponentName("com.android.keepass", "com.keepassdroid.PasswordActivity"));
-		intent.setAction(Intent.ACTION_VIEW);
+		// intent.setAction(Intent.ACTION_VIEW);
 
 		intent.setData(dbinfo.database);
 		intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
