@@ -32,6 +32,7 @@ import android.content.ClipData;
 import android.content.ClipDescription;
 import android.content.ComponentName;
 import android.content.Intent;
+import android.net.Uri;
 import android.nfc.NdefMessage;
 import android.nfc.NdefRecord;
 import android.nfc.NfcAdapter;
@@ -41,6 +42,7 @@ import android.util.Log;
 import android.widget.Toast;
 
 import java.io.IOException;
+import java.net.URLDecoder;
 import java.util.Arrays;
 
 public class ReadActivity extends Activity {
@@ -139,7 +141,6 @@ public class ReadActivity extends Activity {
 		intent.setComponent(new ComponentName("com.android.keepass", "com.keepassdroid.PasswordActivity"));
 		// intent.setAction(Intent.ACTION_VIEW);
 
-		intent.setData(dbinfo.database);
 		intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
 
 		if(dbinfo.keyfile != null) {
@@ -150,6 +151,7 @@ public class ReadActivity extends Activity {
 			intent.setClipData(clipData);
 		}
 
+		intent.setData(dbinfo.database);
 		intent.putExtra("password", dbinfo.password);
 		intent.putExtra("launchImmediately", dbinfo.config != Settings.CONFIG_PASSWORD_ASK);
 
